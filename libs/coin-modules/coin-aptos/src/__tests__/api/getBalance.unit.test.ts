@@ -1,14 +1,18 @@
 import { AptosAPI } from "../../network";
-import { getBalances } from "../../logic/getBalances";
-import { APTOS_ASSET_ID } from "../../constants";
-import BigNumber from "bignumber.js";
+import { APTOS_ASSET_ID, TOKEN_TYPE } from "../../constants";
+import type { AptosConfig } from "../../config";
+import { createApi } from "../../api";
 
-jest.mock("../../network");
+jest.mock("@aptos-labs/ts-sdk");
 let mockedAptosApi: jest.Mocked<any>;
+jest.mock("../../network");
+jest.mock("../../config", () => ({
+  setCoinConfig: jest.fn(),
+}));
+
+const mockAptosConfig: AptosConfig = {} as AptosConfig;
 
 describe("getBalance", () => {
-  // let mockGetBalances: jest.Mock;
-
   beforeEach(() => {
     mockedAptosApi = jest.mocked(AptosAPI);
   });
@@ -17,104 +21,78 @@ describe("getBalance", () => {
     jest.resetAllMocks();
   });
 
-  it("should returns balance with value 10", async () => {
-    // mockGetBalances.mockResolvedValue([{ contracAddress: APTOS_ASSET_ID, amount: new BigNumber(10) }]);
-
-    const mockGetBalances = jest
-      .fn()
-      .mockResolvedValue([{ contractAddress: APTOS_ASSET_ID, amount: BigNumber(10) }]);
+  it("should return balance with value 10", async () => {
     mockedAptosApi.mockImplementation(() => ({
-      getBalances: mockGetBalances,
+      getBalances: jest.fn().mockResolvedValue([{ contractAddress: APTOS_ASSET_ID, amount: 10n }]),
     }));
 
+    const api = createApi(mockAptosConfig);
     const accountAddress = "0x4be47904b31063d60ac0dfde06e5dc203e647edbe853bae0e666ae5a763c3906";
-    const client = new AptosAPI("aptos");
-    const balances = await getBalances(client, accountAddress);
 
-    expect(balances).toBeDefined();
-    expect(balances).toMatchObject([{ value: BigInt(10), asset: { type: "native" } }]);
-    expect(mockGetBalances).toHaveBeenCalledWith(accountAddress, undefined);
+    expect(await api.getBalance(accountAddress)).toStrictEqual([
+      { value: 10n, asset: { type: "native" } },
+    ]);
   });
 
   it("should return empty array when no contract_address and no data", async () => {
-    const mockGetBalances = jest.fn().mockResolvedValue([]);
     mockedAptosApi.mockImplementation(() => ({
-      getBalances: mockGetBalances,
+      getBalances: jest.fn().mockResolvedValue([]),
     }));
 
     const accountAddress = "0xno_contract_and_no_data";
-    const client = new AptosAPI("aptos");
-    const balances = await getBalances(client, accountAddress);
 
-    expect(balances).toEqual([]);
-    expect(mockGetBalances).toHaveBeenCalledWith(accountAddress, undefined);
+    const api = createApi(mockAptosConfig);
+    expect(await api.getBalance(accountAddress)).toStrictEqual([]);
   });
 
   it("should return balance with 'native' contract_address (APTOS_ASSET_ID)", async () => {
-    const mockGetBalances = jest
-      .fn()
-      .mockResolvedValue([{ contractAddress: APTOS_ASSET_ID, amount: new BigNumber(15) }]);
     mockedAptosApi.mockImplementation(() => ({
-      getBalances: mockGetBalances,
+      getBalances: jest.fn().mockResolvedValue([{ contractAddress: APTOS_ASSET_ID, amount: 15n }]),
     }));
 
-    const accountAddress = "0xcontract_present";
-    const contractAddress = APTOS_ASSET_ID;
-    const client = new AptosAPI("aptos");
-    const balance = await getBalances(client, accountAddress, contractAddress);
+    const api = createApi(mockAptosConfig);
+    const accountAddress = "0x4be47904b31063d60ac0dfde06e5dc203e647edbe853bae0e666ae5a763c3906";
 
-    expect(balance).toBeDefined();
-    expect(balance).toMatchObject([{ value: BigInt(15), asset: { type: "native" } }]);
-    expect(mockGetBalances).toHaveBeenCalledWith(accountAddress, contractAddress);
+    expect(await api.getBalance(accountAddress)).toStrictEqual([
+      { value: 15n, asset: { type: "native" } },
+    ]);
   });
 
   it("should return token balance when contract_address is a coin token", async () => {
     const TOKEN_ASSET_ID = "0x1::my_token::Token";
-    const mockGetBalances = jest
-      .fn()
-      .mockResolvedValue([{ contractAddress: TOKEN_ASSET_ID, amount: new BigNumber(25) }]);
     mockedAptosApi.mockImplementation(() => ({
-      getBalances: mockGetBalances,
+      getBalances: jest.fn().mockResolvedValue([{ contractAddress: TOKEN_ASSET_ID, amount: 25n }]),
     }));
 
-    const accountAddress = "0xtoken_holder";
-    const contractAddress = TOKEN_ASSET_ID;
-    const client = new AptosAPI("aptos");
+    const api = createApi(mockAptosConfig);
+    const accountAddress = "0x4be47904b31063d60ac0dfde06e5dc203e647edbe853bae0e666ae5a763c3906";
 
-    const balance = await getBalances(client, accountAddress, contractAddress);
-
-    expect(balance).toBeDefined();
-    expect(balance).toMatchObject([
+    expect(await api.getBalance(accountAddress)).toStrictEqual([
       {
-        value: BigInt(25),
-        asset: { type: "token", contractAddress: TOKEN_ASSET_ID, standard: "coin" },
+        value: 25n,
+        asset: { type: "token", contractAddress: TOKEN_ASSET_ID, standard: TOKEN_TYPE.COIN },
       },
     ]);
-    expect(mockGetBalances).toHaveBeenCalledWith(accountAddress, contractAddress);
   });
 
   it("should return token balance when contract_address is a fungible_asset token", async () => {
     const TOKEN_ASSET_ID = "0x1";
-    const mockGetBalances = jest
-      .fn()
-      .mockResolvedValue([{ contractAddress: TOKEN_ASSET_ID, amount: new BigNumber(25) }]);
     mockedAptosApi.mockImplementation(() => ({
-      getBalances: mockGetBalances,
+      getBalances: jest.fn().mockResolvedValue([{ contractAddress: TOKEN_ASSET_ID, amount: 25n }]),
     }));
 
-    const accountAddress = "0xtoken_holder";
-    const contractAddress = TOKEN_ASSET_ID;
-    const client = new AptosAPI("aptos");
+    const api = createApi(mockAptosConfig);
+    const accountAddress = "0x4be47904b31063d60ac0dfde06e5dc203e647edbe853bae0e666ae5a763c3906";
 
-    const balance = await getBalances(client, accountAddress, contractAddress);
-
-    expect(balance).toBeDefined();
-    expect(balance).toMatchObject([
+    expect(await api.getBalance(accountAddress)).toStrictEqual([
       {
-        value: BigInt(25),
-        asset: { type: "token", contractAddress: TOKEN_ASSET_ID, standard: "fungible_asset" },
+        value: 25n,
+        asset: {
+          type: "token",
+          contractAddress: TOKEN_ASSET_ID,
+          standard: TOKEN_TYPE.FUNGIBLE_ASSET,
+        },
       },
     ]);
-    expect(mockGetBalances).toHaveBeenCalledWith(accountAddress, contractAddress);
   });
 });
