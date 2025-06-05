@@ -187,8 +187,8 @@ export const WebElementHelpers = {
     return index > 0 ? base.atIndex(index) : base;
   },
 
-  async getWebElementsByCssSelector(selector: string): Promise<string[]> {
-    const texts: string[] = [];
+  async getWebElementsByCssSelector(selector: string): Promise<WebElement[]> {
+    const elements: WebElement[] = [];
     let i = 0;
 
     // eslint-disable-next-line no-constant-condition
@@ -197,15 +197,14 @@ export const WebElementHelpers = {
         const element = web
           .element(by.web.cssSelector(selector))
           .atIndex(i) as unknown as IndexedWebElement;
-        const text = await element.getText();
-        texts.push(text);
+        elements.push(element);
         i++;
       } catch {
         break;
       }
     }
 
-    return texts.filter(Boolean);
+    return elements.filter(Boolean);
   },
 
   getWebElementsByIdAndText(id: string, text: string, index = 0): WebElement {

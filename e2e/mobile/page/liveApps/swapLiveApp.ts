@@ -137,14 +137,18 @@ export default class SwapLiveAppPage {
       ? `Continue with ${provider}`
       : `Swap with ${provider}`;
 
-    const exchangeButton = getWebElementByTag("button");
-    await detoxExpect(exchangeButton).toExist();
-    jestExpect(await exchangeButton.getText()).toBe(expectedButtonText);
+    const exchangeButton = await getWebElementsByCssSelector(
+      `//button[text()="${expectedButtonText}"]`,
+    );
+    await detoxExpect(exchangeButton[0]).toExist();
   }
 
   @Step('Check "Best Offer" corresponds to the best quote')
   async checkBestOffer() {
-    const quoteContainers = await this.getAllSwapProviders();
+    const quoteContainerElements = await this.getAllSwapProviders();
+    const quoteContainers = await Promise.all(
+      quoteContainerElements.map(async elem => await elem.getText()),
+    );
     try {
       const quotes = await this.extractQuotesAndFees(quoteContainers);
       const bestOffer = quotes.reduce<{ rate: number; fees: number; quote: string } | null>(
