@@ -1,9 +1,10 @@
 import React from "react";
 import styled from "styled-components";
+import type { CheckboxProps } from "../../../components/form/Checkbox/Checkbox";
+import { Checkbox, Text } from "../../../components";
 import { withTokens } from "../../libs";
-import { Text } from "../../../components";
-import { Tag } from "../Tag/Tag";
 import { Address } from "../Address/Address";
+import { Tag } from "../Tag/Tag";
 
 export type Account = {
   name: string;
@@ -19,8 +20,9 @@ export type Account = {
 
 type AccountItemProps = {
   onClick: () => void;
-  showIcon?: boolean;
   account: Account;
+  checkbox?: CheckboxProps;
+  showIcon?: boolean;
 };
 
 const Wrapper = styled.div`
@@ -110,7 +112,7 @@ const BalanceContainer = styled.div`
   margin-left: var(--spacing-xs);
 `;
 
-export const AccountItem = ({ onClick, account, showIcon = true }: AccountItemProps) => {
+export const AccountItem = ({ onClick, account, checkbox, showIcon = true }: AccountItemProps) => {
   const { name, balance, fiatValue, protocol, address, ticker, cryptoId, parentId } = account;
 
   return (
@@ -156,6 +158,7 @@ export const AccountItem = ({ onClick, account, showIcon = true }: AccountItemPr
             {balance}
           </Text>
         </BalanceContainer>
+        {checkbox && <Checkbox {...checkbox} />}
       </ContentContainer>
     </Wrapper>
   );
